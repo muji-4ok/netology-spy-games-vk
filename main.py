@@ -112,4 +112,4 @@ if __name__ == '__main__':
     api = VkApi(service_token, client_id, user_name_or_id)
     max_count = 20
 
-    api.write_json('test.json', max_count)
+    api.write_json('groups.json', max_count)
