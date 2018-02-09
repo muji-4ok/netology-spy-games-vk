@@ -30,15 +30,16 @@ class VkApi:
     def write_json(self, filename, max_count=None):
         friends = []
 
-        for i, (name, gid, members, left) in enumerate(self.lone_groups()):
-            if i == max_count:
+        for name, gid, members, left in self.lone_groups():
+            if len(friends) == max_count:
                 break
 
             print(f'{left}'.zfill(3), end='\r')
 
-            friends.append({'name': name,
-                            'gid': gid,
-                            'members_count': members})
+            if name is not None:
+                friends.append({'name': name,
+                                'gid': gid,
+                                'members_count': members})
 
         with open(filename, 'w') as f:
             dump(friends, f, indent=2)
@@ -101,6 +102,8 @@ class VkApi:
 
             if not self.friends_in_group(gid):
                 yield name, gid, members, left
+            else:
+                yield None, None, None, left
 
 
 if __name__ == '__main__':
