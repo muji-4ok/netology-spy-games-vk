@@ -13,6 +13,7 @@ def time_calls(f):
         end = time()
         delta = end - start
 
+        # approx 1000ms / 3
         if delta < 0.35:
             sleep(0.35 - delta)
 
@@ -76,7 +77,7 @@ class VkApi:
         params['access_token'] = token
         params['v'] = '5.71'
 
-        response = requests.get(f'https://api.vk.com/method/{method}', params,)
+        response = requests.get(f'https://api.vk.com/method/{method}', params)
 
         return response.json()['response']
 
@@ -114,3 +115,4 @@ if __name__ == '__main__':
     max_count = None
 
     api.write_json('groups.json', max_count)
+    print('Created groups.json')
