@@ -1,6 +1,5 @@
 import requests
 import sys
-from itertools import cycle
 from urllib.parse import urlencode
 from time import time, sleep
 from json import dump
@@ -13,7 +12,6 @@ def time_calls(f):
         end = time()
         delta = end - start
 
-        # approx 1000ms / 3
         if delta < 0.35:
             sleep(0.35 - delta)
 
@@ -31,13 +29,12 @@ class VkApi:
 
     def write_json(self, filename, max_count=None):
         friends = []
-        progress = cycle('\|/\u2014')
 
-        for i, (name, gid, members) in enumerate(self.lone_groups()):
+        for i, (name, gid, members, left) in enumerate(self.lone_groups()):
             if i == max_count:
                 break
 
-            print(next(progress), end='\r')
+            print(f'{left}'.zfill(3), end='\r')
 
             friends.append({'name': name,
                             'gid': gid,
@@ -85,7 +82,7 @@ class VkApi:
         response = self.call('groups.get', count=1000, user_id=self.uid,
                              extended=1, fields=['members_count'])
 
-        return response['items']
+        return response['count'], response['items']
 
     def friends_in_group(self, gid):
         response = self.call('groups.getMembers', group_id=gid,
@@ -94,15 +91,16 @@ class VkApi:
         return response['count']
 
     def lone_groups(self):
-        groups = self.groups()
+        count, groups = self.groups()
 
-        for group in groups:
+        for i, group in enumerate(groups):
             name = group['name']
             gid = group['id']
             members = group['members_count']
+            left = count - i
 
             if not self.friends_in_group(gid):
-                yield name, gid, members
+                yield name, gid, members, left
 
 
 if __name__ == '__main__':
