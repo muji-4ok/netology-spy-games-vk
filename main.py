@@ -1,5 +1,6 @@
 import requests
 import sys
+from itertools import cycle
 from urllib.parse import urlencode
 from time import time, sleep
 from json import dump
@@ -29,12 +30,13 @@ class VkApi:
 
     def write_json(self, filename, max_count=None):
         friends = []
+        progress = cycle('\|/\u2014')
 
         for i, (name, gid, members) in enumerate(self.lone_groups()):
             if i == max_count:
                 break
 
-            print(f'{i + 1}'.zfill(3), end='\r')
+            print(next(progress), end='\r')
 
             friends.append({'name': name,
                             'gid': gid,
@@ -74,7 +76,7 @@ class VkApi:
         params['access_token'] = token
         params['v'] = '5.71'
 
-        response = requests.get(f'https://api.vk.com/method/{method}', params)
+        response = requests.get(f'https://api.vk.com/method/{method}', params,)
 
         return response.json()['response']
 
@@ -92,7 +94,6 @@ class VkApi:
 
     def lone_groups(self):
         groups = self.groups()
-        # TODO: progress indicator
 
         for group in groups:
             name = group['name']
@@ -110,6 +111,6 @@ if __name__ == '__main__':
     user_name_or_id = sys.argv[1]
 
     api = VkApi(service_token, client_id, user_name_or_id)
-    max_count = 20
+    max_count = None
 
-    api.write_json('test.json', max_count)
+    api.write_json('groups.json', max_count)
