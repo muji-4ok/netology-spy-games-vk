@@ -1,21 +1,22 @@
 import requests
 import sys
 from urllib.parse import urlencode
-from time import time, sleep
-from json import dump
+from json import dump, load
+from pprint import pprint
 
 
 def time_calls(f):
     def wrapper(*args, **kwargs):
-        start = time()
-        result = f(*args, **kwargs)
-        end = time()
-        delta = end - start
+        while True:
+            result = f(*args, **kwargs)
 
-        if delta < 0.35:
-            sleep(0.35 - delta)
+            if 'error' in result:
+                if result['error']['error_code'] not in (1, 6, 10):
+                    return None
+            else:
+                break
 
-        return result
+        return result['response']
 
     return wrapper
 
@@ -30,16 +31,13 @@ class VkApi:
     def write_json(self, filename, max_count=None):
         friends = []
 
-        for name, gid, members, left in self.lone_groups():
+        for name, gid, members in self.lone_groups():
             if len(friends) == max_count:
                 break
 
-            print(f'{left}'.zfill(3), end='\r')
-
-            if name is not None:
-                friends.append({'name': name,
-                                'gid': gid,
-                                'members_count': members})
+            friends.append({'name': name,
+                            'gid': gid,
+                            'members_count': members})
 
         with open(filename, 'w') as f:
             dump(friends, f, indent=2)
@@ -70,46 +68,49 @@ class VkApi:
     @time_calls
     def call(self, method, token=None, **kwargs):
         token = token or self.token
-        params = dict(kwargs)
 
-        params['access_token'] = token
-        params['v'] = '5.71'
+        kwargs['access_token'] = token
+        kwargs['v'] = '5.71'
 
-        response = requests.get(f'https://api.vk.com/method/{method}', params)
+        response = requests.get(f'https://api.vk.com/method/{method}', kwargs)
 
-        return response.json()['response']
+        return response.json()
 
-    def groups(self):
-        response = self.call('groups.get', count=1000, user_id=self.uid,
+    def groups(self, uid):
+        response = self.call('groups.get', count=1000, user_id=uid,
                              extended=1, fields=['members_count'])
 
-        return response['count'], response['items']
+        if response is not None:
+            return {(x['name'], x['id'], x['members_count'])
+                    for x in response['items'] if 'members_count' in x}
+        else:
+            return set()
 
-    def friends_in_group(self, gid):
-        response = self.call('groups.getMembers', group_id=gid,
-                             filter='friends')
+    def friends(self):
+        response = self.call('friends.get', user_id=self.uid)
 
-        return response['count']
+        return response['items']
 
     def lone_groups(self):
-        count, groups = self.groups()
+        user_groups = self.groups(self.uid)
+        friends = self.friends()
+        left = len(friends)
 
-        for i, group in enumerate(groups):
-            name = group['name']
-            gid = group['id']
-            members = group['members_count']
-            left = count - i
+        for fid in friends:
+            user_groups -= self.groups(fid)
+            print(f'{left}'.zfill(3), end='\r')
+            left -= 1
 
-            if not self.friends_in_group(gid):
-                yield name, gid, members, left
-            else:
-                yield None, None, None, left
+        for group in user_groups:
+            yield group
 
 
 if __name__ == '__main__':
-    service_token = ('46e917ae46e917ae46e917ae894689f0ca44'
-                     '6e946e917ae1c873bfc58765bb68405d900')
-    client_id = 6350692
+    with open('config.json') as f:
+        config = load(f)
+        service_token = config['service_token']
+        client_id = config['client_id']
+
     user_name_or_id = sys.argv[1]
 
     api = VkApi(service_token, client_id, user_name_or_id)
