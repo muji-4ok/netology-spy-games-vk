@@ -2,7 +2,6 @@ import requests
 import sys
 from urllib.parse import urlencode
 from json import dump, load
-from pprint import pprint
 
 
 def time_calls(f):
@@ -11,8 +10,14 @@ def time_calls(f):
             result = f(*args, **kwargs)
 
             if 'error' in result:
-                if result['error']['error_code'] not in (1, 6, 10):
+                error_code = result['error']['error_code']
+
+                if error_code in (7, 18):
                     return None
+                elif error_code in (1, 6, 10):
+                    continue
+                else:
+                    print(result['error'])
             else:
                 break
 
