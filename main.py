@@ -4,6 +4,13 @@ from urllib.parse import urlencode
 from json import dump, load
 
 
+UNKNOWN_ERROR = 1
+TOO_MANY_REQUESTS = 6
+INTERNAL_ERROR = 10
+NOT_ENOUGH_PERMISSIONS = 7
+BANNED_OR_DELETED = 18
+
+
 def time_calls(f):
     def wrapper(*args, **kwargs):
         while True:
@@ -12,12 +19,14 @@ def time_calls(f):
             if 'error' in result:
                 error_code = result['error']['error_code']
 
-                if error_code in (7, 18):
+                if error_code in (NOT_ENOUGH_PERMISSIONS, BANNED_OR_DELETED):
                     return None
-                elif error_code in (1, 6, 10):
+                elif error_code in (UNKNOWN_ERROR, TOO_MANY_REQUESTS,
+                                    BANNED_OR_DELETED):
                     continue
                 else:
                     print(result['error'])
+                    raise NotImplementedError
             else:
                 break
 
