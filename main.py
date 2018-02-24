@@ -22,7 +22,7 @@ def time_calls(f):
                 if error_code in (NOT_ENOUGH_PERMISSIONS, BANNED_OR_DELETED):
                     return None
                 elif error_code in (UNKNOWN_ERROR, TOO_MANY_REQUESTS,
-                                    BANNED_OR_DELETED):
+                                    INTERNAL_ERROR):
                     continue
                 else:
                     print(result['error'])
