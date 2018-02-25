@@ -25,8 +25,7 @@ def time_calls(f):
                                     INTERNAL_ERROR):
                     continue
                 else:
-                    print(result['error'])
-                    raise NotImplementedError
+                    raise RuntimeError(result['error'])
             else:
                 break
 
